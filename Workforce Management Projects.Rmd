@@ -1,0 +1,366 @@
+---
+title: "Workforce Management Projects"
+author: "Parikshit Patil"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Impact of Workplace Smoking Rules
+
+a)  
+
+Likelihood:
+
+$$L(\lambda) = \prod_{i=1}^{n} \frac{e^{-\lambda}\lambda^{y_i}}{y_i!}$$
+
+$$=\frac{e^{-\lambda}\lambda^3}{3!} * \frac{e^{-\lambda}\lambda^0}{0!} * \frac{e^{-\lambda}\lambda^0}{0!} * \frac{e^{-\lambda}\lambda^1}{1!} * \frac{e^{-\lambda}\lambda^2}{2!} * \frac{e^{-\lambda}\lambda^1}{1!} \\ 
+= \frac{e^{-6\lambda}\lambda^7}{12}$$
+
+Log Likelihood:
+
+$$\log L = \sum_{i=1}^{n} -\lambda + y_i\log(\lambda) - log(y_i!)$$
+
+$$\log L = [-\lambda + 3\log(\lambda) - log(3!)] + [-\lambda + 0\log(\lambda) - log(0!)] + [-\lambda + 0\log(\lambda) - log(0!)] + $$
+
+$$[-\lambda + 1\log(\lambda) - log(1!)] + [-\lambda + 2\log(\lambda) - log(2!)] + [-\lambda + 1\log(\lambda) - log(1!)] $$ 
+
+$$ = -6\lambda + 7\log\lambda - \log(12)$$
+
+b)  
+
+Since there is no difference between home and work, the sample mean of y is a reasonable estimate for lambda. $$\lambda = \frac{(3+0+0+1+2+1)}{6}=1.166$$
+
+c)  
+
+```{r}
+#Calculate and plot the likelihood function
+
+Lik = function(lamb){
+Lik = (exp(-6*lamb)*lamb^7)/12
+return(Lik)
+}
+
+Lambda=seq(0,3,0.001)
+df = Lik(Lambda)
+
+plot(Lambda,df,type="l",cex.lab=1.5,ylab="Lik")
+abline(v=Lambda[which(df==max(df))],lty=2,col=2)
+
+#Optimize
+optimize(Lik, interval=c(0,3), maximum=TRUE)
+```
+
+d)  $$\log L = \sum_{i=1}^{n} -\lambda + y_i\log(\lambda) - log(y_i!)$$ 
+
+$$\log L = [-\lambda_H + 3\log(\lambda_H) - log(3!)] + [-\lambda_W + 0\log(\lambda_W) - log(0!)] + $$
+$$[-\lambda_W + 0\log(\lambda_W) - log(0!)] + [-\lambda_W + 1\log(\lambda_W) - log(1!)] + $$
+$$[-\lambda_H + 2\log(\lambda_H) - log(2!)] + [-\lambda_H + 1\log(\lambda_H) - log(1!)]$$
+$$= -3\lambda_H-3\lambda_W+6\log(\lambda_H)+1\log(\lambda_W)-\log(12)$$
+
+e)  
+
+For lambda_H, a reasonable estimate would be the sample mean of y which only corresponds to working from home (i.e. mean of 3,2,1). $$\lambda_H = \frac{(3+2+1)}{3}=2$$
+
+For lambda_W, a reasonable estimate would be the sample mean of y which only correspond to working from the office (i.e. mean of 0,0,1). $$\lambda_W = \frac{(0+0+1)}{3}=0.333$$
+
+f)  
+
+```{r}
+#Calculate and optimize the likelihoodSS
+
+Lik_H = function(lamb_H){
+Lik_H = -3*lamb_H + 6*log(lamb_H) - log(12)
+return(Lik_H)
+}
+
+Lik_W = function(lamb_W){
+Lik_W = -3*lamb_W + log(lamb_W) - log(12)
+return(Lik_W)
+}
+
+optimize(Lik_H, interval=c(0,3), maximum=TRUE)
+optimize(Lik_W, interval=c(0,3), maximum=TRUE)
+```
+
+g)  $$Given: \log(\lambda) = \beta_0+\beta_1x => \lambda = e^{\beta_0+\beta_1x}$$ $$\log L = \sum_{i=1}^{n} -\lambda_i + y_i\log(\lambda_i) - log(y_i!) \\ 
+    = \sum_{i=1}^{n} -e^{\beta_0+\beta_1x_i} + y_i(\beta_0+\beta_1x_i) - log(y_i!)$$ $$= [-e^{\beta_0+\beta_10} + 3(\beta_0+\beta_10) - log(3!)] + [-e^{\beta_0+\beta_11} + 0(\beta_0+\beta_11) - log(0!)] \\ + [-e^{\beta_0+\beta_11} + 0(\beta_0+\beta_11) - log(0!)] + [-e^{\beta_0+\beta_11} + 1(\beta_0+\beta_11) - log(1!)] \\ + [-e^{\beta_0+\beta_10} + 2(\beta_0+\beta_10) - log(2!)] + [-e^{\beta_0+\beta_10} + 1(\beta_0+\beta_10) - log(1!)]$$
+
+$$ = -3e^{\beta_0} + -3e^{\beta_0+\beta_1} + 7\beta_0 + \beta_1 - \log(12)$$
+
+h)  
+
+```{r}
+#Lik_b0 = function(b0){
+#Lik_b0 = -3*exp(b0) + -3*exp(b0) + 7*b0 - log(12)
+#return(Lik_b0)
+#}
+
+#Lik_b1 = function(b1){
+#Lik_b1 = -3*exp(b1) + b1 - log(12)
+#return(Lik_b1)
+#}
+
+#optimize(Lik_b0, interval=c(0,100), maximum=TRUE)
+#optimize(Lik_b1, interval=c(0,100), maximum=TRUE)
+```
+
+```{r}
+# Model 3 Likelihood
+lik_b0_b1 = function(params) {
+  b_0 = params[1]
+  b_1 = params[2]
+  
+  Lik <- -3 * exp(b_0) - 3 * exp(b_0 + b_1) + 7 * b_0 + b_1 - log(12)
+  
+  return(-Lik)
+}
+
+# Set initial values for optimization
+initial_values = c(0, 0)
+
+# Optimize
+result = optim(par = initial_values, fn = lik_b0_b1, method = "L-BFGS-B")
+
+# MLE estimates b_0 b_1
+b_0 = result$par[1]
+b_1 = result$par[2]
+
+cat("Maximum Likelihood Estimators:\n")
+cat("b_0 =", b_0, "\n")
+cat("b_1 =", b_1, "\n")
+
+# 3D plot
+b_0_val = seq(-2, 2, length.out = 100)
+b_1_val = seq(-2, 2, length.out = 100)
+logLik_values = matrix(0, nrow = length(b_0_val), ncol = length(b_1_val))
+
+#log-likelihood values
+for (i in 1:length(b_0_val)) {
+  for (j in 1:length(b_1_val)) {
+    logLik_values[i, j] = lik_b0_b1(c(b_0_val[i], b_1_val[j]))
+  }
+}
+
+# 3D Plot
+persp(x = b_0_val, y = b_1_val, z = logLik_values, main = "Log-Likelihood Function (Model 3)", 
+      xlab = "b_0", ylab = "b_1", zlab = "log-Likelihood", theta = 30, phi = 20)
+```
+
+i)  
+
+```{r}
+#create dataset
+x = c(0, 1, 1, 1, 0, 0)
+y = c(3, 0, 0, 1, 2, 1)
+
+SmokeData = data.frame(x = x, y = y)
+
+#Fit model 1
+mod1_poisson <- glm(SmokeData$y ~ 1, family=poisson, SmokeData)
+
+#Fit model 3
+mod3_poisson <- glm(SmokeData$y ~ ., family=poisson, SmokeData)
+
+summary(mod1_poisson)
+summary(mod3_poisson)
+```
+
+Model 1 Estimates: Beta0 = 0.1542
+
+Model 3 Estimates: Beta0 = 0.6931, Beta1 = -1.7918
+
+Proof for MLE of Model 3 agrees with MLE of Model 2:
+
+$$\log({\lambda_i}) = \beta_0 + \beta_1x_i$$ Consider Subject 3 from the data, where x = 1, lambda_i is from model 2, and betas are from model 3
+
+$$\log({\lambda_W}) = \beta_0 + \beta_1x_3$$
+
+$$\log(0.3333148) = 0.6931 + (-1.7918)1$$
+
+$$-1.098 = -1.098$$
+
+$$LHS = RHS\\Hence~Proved$$
+
+
+## Impact of Gender on Admissions
+
+```{r}
+suppressMessages(library(faraway))
+str(UCBAdmissions)
+```
+
+a)
+
+```{r}
+library(broom)
+#ct = xtabs( ~ Gender + Admit, data = UCBAdmissions)
+ucb_tidy <- tidy(UCBAdmissions)
+# Contingency Table
+ct <- xtabs(n~Admit+Gender, ucb_tidy)
+
+data = UCBAdmissions
+#get overall percentages
+prop.table(apply(data, c(1, 2), sum),1)
+
+#show each department
+data
+```
+
+We can see that the proportion of male applicants who were admitted (68%) and rejected (53%) are both larger than female applicants. This cannot be possible, since only the proportion of being either admitted or rejected can be larger than the other gender, not both. Additionally, we can see that departments C and E have more admissions for females than males.
+Therefore, this is an example of Simpson's paradox.
+
+b)
+
+```{r}
+# Convert the UCBAdmissions dataset to a data frame
+UCB_df <- as.data.frame(UCBAdmissions)
+
+# Add a column for department
+UCB_df$Dept <- rep(LETTERS[1:6], each = 4)
+
+# Reshape the data to long format
+UCB_reformatted <- reshape2::melt(UCB_df, id.vars = c("Admit", "Gender", "Dept"))
+
+# Convert Admit to a binary variable (0 for Rejected, 1 for Admitted)
+#UCB_reformatted$Admit <- ifelse(UCB_reformatted$Admit == "Admitted", 1, 0)
+
+#UCB_reformatted
+
+#Mantel Haenszel Test
+mantelhaen.test(data,exact=TRUE)
+```
+From the Mantel Haenszel Test since the p-value is large, we reject the null hypothesis of independence between Gender and Admits.
+
+goodness of fit using deviance to check mutual independence and joint independence:
+```{r}
+#Mutual Independance
+poisson_model_admi = glm(n ~ Admit + Gender + Dept, ucb_tidy, family=poisson)
+c(deviance(poisson_model_admi),df.residual(poisson_model_admi))
+pchisq(poisson_model_admi$deviance,df.residual(poisson_model_admi),lower=FALSE)
+
+#Joint Independence
+poisson_model_admi_2 = glm(n ~ Gender*Admit + Dept, ucb_tidy, family=poisson)
+c(deviance(poisson_model_admi_2),df.residual(poisson_model_admi_2))
+pchisq(deviance(poisson_model_admi_2),df.residual(poisson_model_admi_2),lower=FALSE)
+```
+The model with main effects-only (under independence), and the model with Dept, Admit, Gender, and the interaction do not fit the data well.
+
+Feature Selection Process:
+```{r}
+# Backward Selection process
+model1 <- glm(n ~ Gender*Dept*Admit, ucb_tidy, family=poisson)
+coefficients(model1)
+
+# Drop three-way interaction
+drop1(model1,test="Chi")
+
+# Drop two-way interaction terms
+model2 <- glm(n ~ (Gender+Dept+Admit)^2, ucb_tidy, family=poisson)
+drop1(model2,test="Chi")
+```
+Since the p-value for the interaction term Gender:Admit reflects the hypothesis of independence of the Mantel-Haenszel test (similar p-values)
+As a result, we reject the hypothesis of independence between Gender and Admissions.
+
+c)
+
+For some 3-way tables, we may regard one variable as response the other two as predictors
+For the UCBAdmissions data set, we could model Admit (response) as a Binomial GLM:
+```{r}
+# Fit the logistic regression model
+logistic_model = glm(Admit ~ Gender + Dept, data = UCB_reformatted, family = binomial)
+
+summary(logistic_model)
+```
+This is a model containing only the main effects, and is the same as the Poisson model of uniform association seen previously.
+
+
+## High School Program Selection
+
+a)  
+
+```{r}
+library(faraway)
+library(nnet)
+data("hsb")
+hsb <- hsb[,-1] ## removing first column corresponding to student ID
+str(hsb)
+```
+
+```{r}
+hsb_mnom = multinom(prog ~ ., data = hsb)
+summary(hsb_mnom)
+```
+
+b)  
+
+```{r}
+exp(coef(hsb_mnom))
+```
+
+NOTE - All the below interpretations are relative to the Academic program category.
+
+Read Score: For every one-unit increase in read score, the odds of being in the general category decrease by approximately 4.4%. For every one-unit increase in read score, the odds of being in the vocation category decrease by approximately 3.5%.
+
+Write Score: For every one-unit increase in write score, the odds of being in the general category decrease by approximately 3.6%. For every one-unit increase in write score, the odds of being in the vocation category decrease by approximately 3.2%.
+
+Math Score: For every one-unit increase in math score, the odds of being in the general category decrease by approximately 10.4%. For every one-unit increase in math score, the odds of being in the vocation category decrease by approximately 10.8%.
+
+Science Score: For every one-unit increase in science score, the odds of being in the general category increase by approximately 10.7%. For every one-unit increase in science score, the odds of being in the vocation category **increase** by approximately 5.3%.
+
+Socst Score: For every one-unit increase in social studies score, the odds of being in the general category decrease by approximately 2%. For every one-unit increase in social studies score, the odds of being in the vocation category decrease by approximately 7.8%.
+
+c)  
+
+Out of the 5 subjects, the results for science is very unexpected. The reason for this might be that students who are better in science might prefer a lower workload in order to focus on other tasks such as sports or projects.
+
+
+## S&P 500 Market Direction 
+
+a)
+
+The logistic model is fitted to lag 2, volume and interaction of lag2 and volume. There are 4 coefficients, including the coefficients. 
+
+p = probability of predicted Direction.
+$$\eta = log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_{1}x_{Lag2}~+\beta_{2}x_{Volume} + \beta_{3}x_{Lag2}x_{Volume}$$
+
+glm(direction~Lag2*Volume, family = binomial, data = Weekly)
+
+It can be seen that the Direction increases as the Lag2 increases. We can also see that both the categories of Volume have different slopes since they cross, indicating that there is an interaction term between Lag2 and Volume.Therefore there are 4 predictors - Lag2+Volume+Lag2:Volume.
+
+b)
+
+```{r}
+(1-exp(0.065))*100
+(1-exp(0.05))*100
+```
+For the black line (high volume), every unit increase in Lag2 results in a 6.7% increase in the odds of direction going up. 
+
+For the red line (low volume), every unit increase in Lag2 results in a 5.1% increase in the odds of direction going up.
+
+C)
+
+```{r}
+(1-exp(0.138))*100
+(1-exp(0.296))*100
+```
+
+There is a practical interpretation for the intercepts, since Lag2 can be 0 practically. 
+
+The intercept of the black line represents an odds of 14.79% of the direction going up when Lag2 is 0 and the volume is high. 
+
+The intercept of the red line represents an odds of 34.44% of the direction going up when Lag2 is 0 and the volume is low. 
+
+d)
+When Volume = 0 (low- red line):
+$$\eta = \beta_0 + \beta_1x_{lag2}$$
+
+When Volume = 1 (high- black line):
+$$\eta = (\beta_0 + \beta_2) + (\beta_1+\beta_3)x_{lag2}$$
+$$\therefore\beta_0=0.296$$
+$$\beta_1=0.05$$
+$$\beta_2=0.138-0.296=-0.158$$
+$$\beta_3=0.065-0.05=0.015$$
